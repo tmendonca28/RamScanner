@@ -2,23 +2,33 @@ package main
 
 import (
 	"bytes"
-	//"errors"
 	"fmt"
-	//"os"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
-//type saveFile struct {
-//	filepath string
-//	separator string
-//}
-
-//func getFileData() (saveFile, error) {
-//	if len(os.Args) < 2 {
-//		return saveFile{}, errors.New("A filepath argument is required")
-//	}
-//	return
-//}
+func walkMatch(root, pattern string) ([]string, error) {
+	var matches []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if matched, err := filepath.Match(pattern, filepath.Base(path)); err != nil {
+			return err
+		} else if matched {
+			matches = append(matches, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return matches, nil
+}
 
 func getSearchString(data []byte, searchTerm string) int {
 	results := make(map[string]int, 0)
@@ -39,14 +49,21 @@ func getSearchString(data []byte, searchTerm string) int {
 }
 
 func main() {
-	b, err := ioutil.ReadFile("./checkpoints/1614939630.ram")
+	saveFiles, err:= walkMatch("./checkpoints", "*.ram")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Print(err)
 	}
-	// Lives Left comes after "LEFT" string in byte array
-	s := "LEFT"
-	fmt.Println("Length of byte array is ", len(b))
-	fmt.Println(getSearchString(b, s))
+	for _, saveFile := range saveFiles {
+		s, err := ioutil.ReadFile(saveFile)
+		searchTerm := "LEFT"
+		if err != nil {
+			fmt.Print(err)
+		}
+		fmt.Println(saveFile)
+		fmt.Println(getSearchString(s, searchTerm))
+		fmt.Println(s[getSearchString(s, searchTerm)])
+		fmt.Println()
+	}
 }
 
 
